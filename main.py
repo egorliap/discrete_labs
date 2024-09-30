@@ -1,12 +1,16 @@
 from math import log2 
 import random
 from tabulate import tabulate
+import os
 
 DECODE_DIR = "decoded/"
 CODES_DIR = "codes/"
 ENCODE_PREFIX = "encoded_"
 DECODE_PREFIX = "decoded_"
-
+if not os.path.exists(CODES_DIR):
+    os.makedirs(CODES_DIR)
+if not os.path.exists(DECODE_DIR):
+    os.makedirs(DECODE_DIR)
 
 class FanoEncoder:
     def __init__(self, f_name):
