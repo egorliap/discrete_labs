@@ -51,22 +51,29 @@ class FanoEncoder:
             d = abs(sb-se)
             m -= 1
             sb -= probs[m][1]
-            se += probs[m][1]
-            
+            se += probs[m][1]     
         return m
     
     
     def encode(self, b=0, e=None, k=0):
-        if(e == None):
-            e = len(self.probs)-1
+        stack = [(b,e,k)]
+        while stack:
+            b, e, k = stack.pop()
+            if(e == None):
+                e = len(self.probs)-1
+
+            if(b < e):
+                k += 1
+                m = self.med(b,e,self.probs)
+                for i in range(b, e+1):
+                    self.encoding[i][1] += str(int(i>m))
+                stack.append((b,m,k))
+                stack.append((m+1,e,k))
+                # self.encode(b, m, k)
+                # self.encode(m+1, e, k)
         
-        if(b < e):
-            k += 1
-            m = self.med(b,e,self.probs)
-            for i in range(b, e+1):
-                self.encoding[i][1] += str(int(i>m))
-            self.encode(b, m, k)
-            self.encode(m+1, e, k)
+        
+        
     
     def print_encoding(self):
         table = []
@@ -96,20 +103,19 @@ class FanoEncoder:
     def write_codes(self):
         with open(CODES_DIR + self.f_name, "w+") as f:
             for el in self.encoding:
-                sym = repr(el[0])
-                line = f"{sym.strip()} {el[1]}"
-                f.write(line)
+                sym = str(ord(el[0]))
+                code = str(ord(chr(int(el[1],base=2))))
+                f.write(sym)
+                f.write(" ")
+                f.write(code)
                 f.write("\n")
             
     
     def write_translation(self):
         enc = self._encoding_to_dict()
-        encoded_message = ""
-        for c in self.message:
-            encoded_message += enc[c]
-            
-        with open(ENCODE_PREFIX + self.f_name, "w+") as f:
-            f.write(encoded_message)
+        with open(ENCODE_PREFIX + self.f_name.replace(".txt", ".bin"), "wb+") as f:
+            for c in self.message:
+                f.write(chr(int(enc[c], base=2)).encode("utf-8"))
     
     def count_effectiveness(self):
         pl = 0
@@ -124,12 +130,13 @@ class FanoDecoder:
         self.name = name
         self.f_name = f_name
         try:
-            with open(f_name, "r") as f:
-                self.message = "".join(f.readlines())
+            with open(f_name, "rb") as f:
+                self.message = str(b"".join(f.readlines()),encoding="utf-8")
+     
         except FileNotFoundError:
             print("Message is not found")
         try:
-            with open(CODES_DIR + name, "r") as f:
+            with open(CODES_DIR + name.replace(".bin", ".txt"), "r") as f:
                 lines = [line.rstrip() for line in f]
         except FileNotFoundError:
             print("Codes of this message are not found")
@@ -137,43 +144,28 @@ class FanoDecoder:
             
         self.codes = {}
         for line in lines:
-            sym = ""
-            is_sym = False
-            i = 0
-            while i < len(line):
-                
-                if(line[i] == "'" and not is_sym):
-                    is_sym = True
-                    i+=1
-                    continue
-                elif (line[i] == "'" and is_sym):
-                    is_sym = False
-                    i+=2
-                    break
-                if is_sym:
-                    sym += line[i]
-                i+=1
-            code = line[i:]
-            self.codes[code] = sym
-            
-        self.decoded_message = ""
-    
+            sym, code = [int(x) for x in line.split()]
+            self.codes[chr(code)] = chr(sym)
+        print(self.codes)
+        self.decoded_message = b""
+        
     def decode(self):
-        buffer = ""
-        i = 0
+      
         decoded_message = ""
-        while i<len(self.message):
-            buffer += self.message[i]
-            i+=1
+        
+        for i in range(len(self.message)):
+            code = self.message[i]
+            print(code)
+            if code in self.codes.keys():
+                decoded_message += self.codes[code]
+        
             
-            if buffer in self.codes.keys():
-                decoded_message += self.codes[buffer]
-                buffer = ''
+                
         self.decoded_message = decoded_message
     
     def write_translation(self):
         path = DECODE_DIR + DECODE_PREFIX + self.name
-        with open(DECODE_DIR + DECODE_PREFIX + self.name, "w+") as f:
+        with open(DECODE_DIR + DECODE_PREFIX + self.name.replace(".bin", ".txt"), "w+") as f:
             f.write(self.decoded_message)
         return path
             
@@ -218,7 +210,7 @@ def run_interface():
                     fd.decode()
                     res_path = fd.write_translation()
                     
-                    print(f'\n\n Decoded file: "{res_path}"\n\n')
+                    print(f'\n\n Decoded file: "{res_path.replace(".bin", ".txt")}"\n\n')
                 case '3':
                     ls = [100, 1000, 10000]
                     for l in ls:
