@@ -1,5 +1,6 @@
 from math import log2 
 import random
+import struct
 from tabulate import tabulate
 import os
 
@@ -71,9 +72,8 @@ class FanoEncoder:
                 stack.append((m+1,e,k))
                 # self.encode(b, m, k)
                 # self.encode(m+1, e, k)
-        
-        
-        
+
+    
     
     def print_encoding(self):
         table = []
@@ -81,14 +81,15 @@ class FanoEncoder:
             table.append(el.copy())
         smooth_ef = 0
         for i in range(len(table)):
-            smooth_cost = int(log2(len(table)) + 1)*self.probs[i][1]
+            smooth_cost = 8*self.probs[i][1]
             table[i].append(self.probs[i][1])
             table[i].append(len(table[i][1]))
             table[i].append(len(table[i][1])*self.probs[i][1])
             table[i].append(smooth_cost)
             table[i][0] = repr(table[i][0])
             smooth_ef += smooth_cost
-            
+        if(len(table) > 20):
+            table = table[:10] + table[-5:]
         table.append(["Summary effectiveness", '', '', '', self.count_effectiveness(), smooth_ef])
         print(tabulate(table, headers=["Symbol", "Encoding", "Probability", "Length", "P*L", "Smooth P*L"],tablefmt="grid"))
     
@@ -99,29 +100,38 @@ class FanoEncoder:
             d[el[0]] = el[1]
         return d
     
-    
-    def write_codes(self):
-        with open(CODES_DIR + self.f_name, "w+") as f:
-            for el in self.encoding:
-                sym = str(ord(el[0]))
-                code = str(ord(chr(int(el[1],base=2))))
-                f.write(sym)
-                f.write(" ")
-                f.write(code)
-                f.write("\n")
-            
-    
-    def write_translation(self):
-        enc = self._encoding_to_dict()
-        with open(ENCODE_PREFIX + self.f_name.replace(".txt", ".bin"), "wb+") as f:
-            for c in self.message:
-                f.write(chr(int(enc[c], base=2)).encode("utf-8"))
-    
     def count_effectiveness(self):
         pl = 0
         for i in range(len(self.encoding)):
             pl += self.probs[i][1]*len(self.encoding[i][1])
         return pl
+    
+    def write_codes(self):
+        with open(CODES_DIR + self.f_name.replace(".bin", ".txt"), "w+") as out_tree_file:
+            enc = self._encoding_to_dict()
+            for symbol, code in enc.items():
+                if symbol == '\n':
+                    out_tree_file.write(f"BSn\t{code}\n")
+                elif symbol == ' ':
+                    out_tree_file.write(f"space\t{code}\n")
+                else:
+                    out_tree_file.write(f"{symbol}\t{code}\n")
+
+    
+    def write_translation(self):
+        enc = self._encoding_to_dict()
+        encoded_string = ''.join(enc[c] for c in self.message if c in enc.keys())
+        encoded_bytes = bytearray()
+    
+        encoded_bytes.extend(struct.pack(">I", len(self.message)))
+        
+        for i in range(0, len(encoded_string), 8):
+            byte = encoded_string[i:i + 8]
+            encoded_bytes.append(int(byte.ljust(8, '0'), 2))
+        
+        with open(ENCODE_PREFIX + self.f_name.replace(".txt", ".bin"), "wb+") as f:
+            
+            f.write(encoded_bytes)
                 
             
 class FanoDecoder:
@@ -129,39 +139,37 @@ class FanoDecoder:
         name = f_name.split("_")[-1]
         self.name = name
         self.f_name = f_name
-        try:
-            with open(f_name, "rb") as f:
-                self.message = str(b"".join(f.readlines()),encoding="utf-8")
-     
-        except FileNotFoundError:
-            print("Message is not found")
-        try:
-            with open(CODES_DIR + name.replace(".bin", ".txt"), "r") as f:
-                lines = [line.rstrip() for line in f]
-        except FileNotFoundError:
-            print("Codes of this message are not found")
-            lines = []
-            
         self.codes = {}
-        for line in lines:
-            sym, code = [int(x) for x in line.split()]
-            self.codes[chr(code)] = chr(sym)
-        print(self.codes)
-        self.decoded_message = b""
         
+        with open(f_name, "rb") as f:
+            self.message = b"".join(f.readlines())
+
+        with open(CODES_DIR + name.replace(".bin", ".txt"), 'r') as f:
+            for line in f:
+                symbol, code = line.strip().split('\t')
+                if symbol == "BSn":
+                    symbol = '\n'
+                elif symbol == "space":
+                    symbol = ' '
+                self.codes[code] = symbol
+    
     def decode(self):
-      
         decoded_message = ""
-        
-        for i in range(len(self.message)):
-            code = self.message[i]
-            print(code)
-            if code in self.codes.keys():
-                decoded_message += self.codes[code]
-        
-            
+        current_code = ""
+
+        length = struct.unpack(">I", self.message[:4])[0]
+        encoded_bits = ''.join(f'{byte:08b}' for byte in self.message[4:])
+
+        for bit in encoded_bits:
+            current_code += bit
+            if current_code in self.codes.keys():
+                decoded_message += self.codes[current_code]
+                current_code = ""
+                if len(decoded_message) == length:
+                    break
                 
         self.decoded_message = decoded_message
+    
     
     def write_translation(self):
         path = DECODE_DIR + DECODE_PREFIX + self.name
