@@ -111,9 +111,9 @@ class FanoEncoder:
             enc = self._encoding_to_dict()
             for symbol, code in enc.items():
                 if symbol == '\n':
-                    out_tree_file.write(f"BSn\t{code}\n")
+                    out_tree_file.write(f"bn\t{code}\n")
                 elif symbol == ' ':
-                    out_tree_file.write(f"space\t{code}\n")
+                    out_tree_file.write(f"sp\t{code}\n")
                 else:
                     out_tree_file.write(f"{symbol}\t{code}\n")
 
@@ -147,9 +147,9 @@ class FanoDecoder:
         with open(CODES_DIR + name.replace(".bin", ".txt"), 'r') as f:
             for line in f:
                 symbol, code = line.strip().split('\t')
-                if symbol == "BSn":
+                if symbol == "bn":
                     symbol = '\n'
-                elif symbol == "space":
+                elif symbol == "sp":
                     symbol = ' '
                 self.codes[code] = symbol
     
