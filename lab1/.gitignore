@@ -1,4 +1,5 @@
 test*
+!test7*
 encoded_*
 decoded_*
 random*
