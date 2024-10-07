@@ -1,4 +1,3 @@
-from math import log2 
 import random
 import struct
 from tabulate import tabulate
@@ -8,6 +7,7 @@ DECODE_DIR = "decoded/"
 CODES_DIR = "codes/"
 ENCODE_PREFIX = "encoded_"
 DECODE_PREFIX = "decoded_"
+
 if not os.path.exists(CODES_DIR):
     os.makedirs(CODES_DIR)
 if not os.path.exists(DECODE_DIR):
