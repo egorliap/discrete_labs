@@ -58,6 +58,8 @@ class FanoEncoder:
     
     def encode(self, b=0, e=None, k=0):
         stack = [(b,e,k)]
+        if(len(self.probs) == 1):
+            self.encoding[0][1] = '0' 
         while stack:
             b, e, k = stack.pop()
             if(e == None):
@@ -70,8 +72,7 @@ class FanoEncoder:
                     self.encoding[i][1] += str(int(i>m))
                 stack.append((b,m,k))
                 stack.append((m+1,e,k))
-                # self.encode(b, m, k)
-                # self.encode(m+1, e, k)
+        
 
     
     
@@ -107,8 +108,10 @@ class FanoEncoder:
         return pl
     
     def write_codes(self):
+        enc = self._encoding_to_dict()
+
         with open(CODES_DIR + self.f_name.replace(".bin", ".txt"), "w+") as out_tree_file:
-            enc = self._encoding_to_dict()
+            
             for symbol, code in enc.items():
                 if symbol == '\n':
                     out_tree_file.write(f"bn\t{code}\n")
