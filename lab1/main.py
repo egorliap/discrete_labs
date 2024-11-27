@@ -60,9 +60,10 @@ class FanoEncoder:
         stack = [(b,e,k)]
         if(len(self.probs) == 1):
             self.encoding[0][1] = '0' 
+            
         while stack:
             b, e, k = stack.pop()
-            if(e == None):
+            if e is None:
                 e = len(self.probs)-1
 
             if(b < e):
@@ -117,6 +118,8 @@ class FanoEncoder:
                     out_tree_file.write(f"bn\t{code}\n")
                 elif symbol == ' ':
                     out_tree_file.write(f"sp\t{code}\n")
+                elif symbol == '\t':
+                    out_tree_file.write(f"bt\t{code}\n")
                 else:
                     out_tree_file.write(f"{symbol}\t{code}\n")
 
@@ -154,6 +157,8 @@ class FanoDecoder:
                     symbol = '\n'
                 elif symbol == "sp":
                     symbol = ' '
+                elif symbol == "bt":
+                    symbol = "\t"
                 self.codes[code] = symbol
     
     def decode(self):
@@ -162,7 +167,7 @@ class FanoDecoder:
 
         length = struct.unpack(">I", self.message[:4])[0]
         encoded_bits = ''.join(f'{byte:08b}' for byte in self.message[4:])
-
+        print(encoded_bits)
         for bit in encoded_bits:
             current_code += bit
             if current_code in self.codes.keys():
