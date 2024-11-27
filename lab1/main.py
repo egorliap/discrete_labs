@@ -229,10 +229,10 @@ def run_interface():
                     print(f'\n\n Decoded file: "{res_path.replace(".bin", ".txt")}"\n\n')
                 case '3':
                     ls = [100, 1000, 10000]
-                    for l in ls:
-                        message = generate_random_text(l)
-                        path = f"random{l}.txt"
-                        print(f"\n\nCase {l}\n")
+                    for lss in ls:
+                        message = generate_random_text(lss)
+                        path = f"random{lss}.txt"
+                        print(f"\n\nCase {lss}\n")
                         with open(path, "w+") as f:
                             f.write(message)                 
                         fe = FanoEncoder(path)
