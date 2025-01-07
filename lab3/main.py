@@ -1,3 +1,6 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
 def get_grapgh_from_file(filename, graph: dict[str, list]):
     with open(filename, "r") as f:
         n = f.readline()  # noqa: F841
@@ -19,6 +22,7 @@ def is_tree(graph, n):
     cycle = None  
 
     def iterative_dfs(start):
+        print(f"{start=}")
         nonlocal cycle
         visited_start = [False] * n
         
@@ -31,11 +35,14 @@ def is_tree(graph, n):
             if not visited_start[node]:
                 visited_start[node] = True
                 path.append(node)  
+                print(f"{path=}")
 
                 for neighbor in graph[node]:
                     if not visited_start[neighbor]:
                         stack.append((neighbor, node))
                     elif neighbor != parent and cycle is None:
+                        print(f"{cycle=}")
+                        
                         cycle_start = path.index(neighbor)
                         cycle = path[cycle_start:] + [neighbor]
 
@@ -64,7 +71,10 @@ def is_tree(graph, n):
         if z > 0:
             result += f"Обнаружен цикл: {cycle}.\n"
         result += "Граф " + ("является" if q == n - 1 else "не является") + " древочисленным."
-    
+    G = nx.Graph(graph)
+    plt.figure(figsize=(8,6))
+    nx.draw(G, pos = nx.spring_layout(G), ax = None, with_labels = True,font_size = 20, node_size = 2000)
+    plt.show()    
     return result
 
 # Пример использования

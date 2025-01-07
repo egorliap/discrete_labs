@@ -49,7 +49,9 @@ def find_major_matching(v1: List[str], v2: List[str], e: List[Tuple[str, str]]):
 
             for u in incd_v1[node]:
                 if major_matching[u] is None:
+                    
                     while node:
+                        
                         next_node = matched_v1[node]
                         matched_v1[node] = u
                         major_matching[u] = node
@@ -62,7 +64,11 @@ def find_major_matching(v1: List[str], v2: List[str], e: List[Tuple[str, str]]):
         return False
 
     for v in v1:
+        print(major_matching) 
+        
         augmental_iterative(v)
+        print(major_matching) 
+        
 
     return matched_v1, major_matching
 
